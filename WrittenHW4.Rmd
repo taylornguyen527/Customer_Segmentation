@@ -1,0 +1,505 @@
+---
+title: "Retention prediction and customer segmentation"
+author: "Julian Cadavid Cadavid & Tuan Anh Nguyen"
+date: "6/5/2023"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+## Abstract:
+This report analyzes customer data  of ColModa S.A., a retail clothing company operating in Colombia for the first six month of 2022, to research customer purchase behavior for the customized marketing campaign. The research aims to distinguish customer segmentation and predict which customer have high retention likelihood with the use of unsupervised to supervised learning methods, such as clustering, Princal Component Analysis, and Random Forest.
+The segmentation indicates 4 main groups of purchase behaviors: "Loyal Customers" who purchases in high quantity and total amount, moderate use of discount with 45% chance to purchase again; "Sale-season Customers" who purchases in high quantity, high use of discount, moderate amount with 38% likelihood to return; "Casual Customers" who pay with the least discount with multiple items, with 34% chance to return; "High-demanded low-value Customers" who only shop for items on sale with only 30% chance to comeback.
+However, these groups do not affect the retention rate the most. Discount, Total purchase amount and purchase Region are top factors to predict the retention of customers. The retention prediction yields around 64% accuracy.
+
+## Introduction:
+ColModa S.A. is a retail company that distribute brands like SuperDry and Diesel across 50 stores in 18 regions of COlumbia and online platform. The company want to gain deeper understanding of their customer retention and purchase patterns to decide on their new customized marketing efforts. The main goals of the research are to define customer segmentation based on their purchases and to predict retention based on all the purchase details and customer characteristic.
+The data contains first orders details and non-personal-identified information of the new customers (who had not purchased before 2023) from January 2022 to June 2022 and track if they have return to make another purchase until May 15th, 2023.
+By analyzing customer data, including variables such as gender, region, channel, number of types, quantity, discount, and value paid, the company seeks to identify patterns and develop strategies to improve customer retention and loyalty. This report presents an analysis of the data, employing techniques like PCA, k-means clustering, and Hierarchical Clustering to gain insights into customer behavior and predict second purchase likelihood using Random Forest method. The findings will inform the company's decision-making process and help design effective strategies to maximize customer engagement.
+
+## Theoretical Background:
+
+
+
+### K-means Clustering:
+K-means clustering is an unsupervised machine learning algorithm used for grouping data points into distinct clusters based on their similarity without explicit labels. The algorithm aims to minimize the within-cluster sum of squares, also known as inertia or distortion, by iteratively optimizing the cluster centroids.
+The key steps in the K-means clustering algorithm are as follows:
+
+  a. Initialization: The algorithm starts by randomly selecting K centroids randomly in the data space, where K is the desired number of clusters
+  
+  b. Cluster Assignment: Each data point is assigned to the nearest centroid based on a distance metric, such as Euclidean distance, a straight line distance between data points.
+  
+  c. Centroid Update: The centroids are updated by computing the mean of the data points assigned to each cluster.
+  
+  d. Iteration: The algorithm Iterate through Cluster Assignment and Centroid Update steps until convergence, i.e., when the centroids no longer change significantly or a maximum number of iterations is reached.
+
+K-means clustering aims to minimize the within-cluster sum of squares, which quantifies the compactness of each cluster. It assumes that the clusters are spherical, equally sized, and have similar densities. The algorithm is sensitive to the initial centroid positions, and different initializations can result in different clustering outcomes.
+Some parameters that needs to be considered for k-means methods are number of clusters, initialization method. With larger number of clusters, the errors would get smaller but the result is more granular and might reduce the representiveness of larger clusters. This analysis will use the "elbow" method, picking the optimal number of clusters where the errors start diminishing. The randomness of centroid initialization could results in vastly different clusters, so the analysis would repeat this clustering process multiple times with different initial centroids to mitigate the problem.
+
+K-means clustering has various applications, including customer segmentation, image compression, document clustering, and anomaly detection. Some limitation to this k-mean clustering is that the model can not work with categorical values, since they depends on distances between data points; and the Euclidian distance is sensitive to outliers and is under assumption of linearity between data points. 
+
+### Hierarchical Clustering:
+Hierarchical clustering is another unsupervised machine learning technique used for grouping data points into clusters. Unlike K-means clustering, hierarchical clustering does not require specifying the number of clusters beforehand. It creates a hierarchical structure of clusters, often represented as a dendrogram, by iteratively merging or splitting clusters based on their similarity.
+There are two main types of hierarchical clustering:
+
+  a. Agglomerative (bottom-up): It starts with each data point as an individual cluster and iteratively merges the most similar clusters until a single cluster encompasses all data points.
+  
+  b. Divisive (top-down): It begins with all data points in a single cluster and recursively splits the cluster into smaller clusters until each data point forms its own cluster.
+
+The similarity between clusters is measured using various distance metrics, such as Euclidean distance, Manhattan distance, or correlation distance. Different linkage methods, such as single-linkage, complete-linkage, or average-linkage, determine how the similarity between clusters is computed.
+
+Hierarchical clustering provides a visual representation of the clustering structure through dendrograms, which can be cut at different heights to obtain different numbers of clusters. This flexibility is advantageous when the number of clusters is unknown or when exploring different granularity levels of clustering.
+
+Hierarchical clustering has applications in various fields, including biology, image analysis, social network analysis, and market segmentation.
+
+### Principal Component Analysis (PCA):
+Principal Component Analysis (PCA) is a dimensionality reduction technique widely used in data analysis and machine learning. It aims to transform a high-dimensional dataset into a lower-dimensional space while preserving the most important information and minimizing the loss of variance. PCA achieves this by identifying the principal components, which are linear combinations of the original features, that capture the maximum variance in the data.
+The main steps involved in PCA are as follows:
+
+  a. Standardization: The dataset is typically standardized to ensure that each feature has a mean of zero and a standard deviation of one. This step is crucial for avoiding bias towards features with larger scales.
+  
+  b. Covariance Matrix Computation: The covariance matrix is calculated based on the standardized dataset. It represents the pairwise covariances between the features and provides insights into the relationships among them.
+  
+  c. Eigenvalue Decomposition: The covariance matrix is then decomposed into its eigenvectors and eigenvalues. The eigenvectors represent the directions of maximum variance in the dataset, while the corresponding eigenvalues indicate the amount of variance captured by each eigenvector.
+  
+  d. Principal Component Selection: The eigenvectors, sorted by their corresponding eigenvalues in descending order, are selected as the principal components. These components form a new orthogonal basis that can represent the original dataset with reduced dimensionality.
+  
+  e. Projection: The original dataset is projected onto the new basis formed by the principal components, resulting in a lower-dimensional representation.
+
+PCA offers several benefits, including dimensionality reduction, noise reduction, visualization of high-dimensional data, and identification of the most important features. It has applications in various domains, such as image and signal processing, pattern recognition, and data compression.
+
+### Random Forest:
+Random Forest is a popular supervised ensemble learning method. All supervised learning requires the dataset to have pairs of the predictors or independent variables and corresponding dependent variables. Random Forest combines multiple decision trees to make decisions. Decision tree have a hierarchical structure of binary splits from decision nodes. The decision node bases on breaking down the categorical values into 2 groups or a clean split of a continuous value then pick a side from the split. Therefore, decision tree could be used for either classification or regression problem. 
+The main characteristics of Random Forest are as follows:
+
+  a. Ensemble Learning: Random Forest builds an ensemble of decision trees by training each tree on a random subset of the data and random subsets of the features. Each decision tree contributes to the final prediction by voting (classification) or averaging (regression).
+  
+  b. Randomness: Randomness is introduced in two ways:
+  
+      - Random Sampling: Each tree is trained on a bootstrap sample of the original data, where some data points may be repeated and others left out.
+      
+      - Random Feature Selection: At each node of the decision tree, a random subset of features is considered for splitting. This reduces the correlation between trees and allows capturing different aspects of the data.
+      
+  c. Prediction Aggregation: For classification tasks, the final prediction is determined by majority voting among the trees. For regression tasks, the final prediction is the average of the predictions from all the trees.
+
+Bootstraping sample and Aggregate final predictions is also called Bagging method.
+
+Random Forest is known for its ability to handle high-dimensional data, feature importance estimation, and robustness against overfitting. It can handle both categorical and continuous features, handle missing data through random feature selection, and provide measures of feature importance. Random Forest has a wide range of applications, including classification, regression, anomaly detection, and feature selection. It is well-suited for this specific dataset and task, where there is a combination of numerical and categorical predictors to perform a classification task. Additionally, random forests are robust to outliers and missing values, making them more reliable for real-world data analysis, where human error may occur in data collection.
+
+### Cross-validation
+Cross-validation is a technique to evaluate the performance of machine learning models on unseen data. First, the data get partitioned by even-size k-fold randomly. Then the algorithm iteratively keep out 1 partition for later evaluation while train the model with the rest of data, then calculate all the metrics on unseen dataset. The final results is aggregated as average to assess the model's performance.
+The key benefits of using cross-validation are first to compare between models and parameters, helps with optimizing hyperparameter tuning; and second is a reliable estimation of metrics since they use all parts of data for training and testing, maximizing information extraction and provide a more robust estimation.
+This analysis apply cross validation to tune the parameters of Random Forest, number of trees and number of features at each node.
+
+## Methodology
+
+### Data introduction and preparation
+
+The objective is to analyze the characteristics of these customers to achieve the following outcomes:
+  1. Identify the characteristics of customers who made a second purchase.
+  2. Segment these customers using Principal Component Analysis (PCA), k-means clustering, and histerical data analysis.
+  3. Develop predictive models to determine the likelihood of a customer making a second purchase.
+  4. The company's interest lies in analyzing customers who made purchases exceeding COP 25,000 (equivalent to $5.87) and purchased items at a discounted price.
+  
+
+The variables to be analyzed are as follows:
+
+  - Customer ID: A unique identifier for each customer.
+  - Gender: Categorization of customers into male or female.
+  - Region: One of the 18 regions nationwide where ColModa S.A. has its stores.
+  - Channel: The brand (Superdry or Diesel) through which the purchase was made.
+  - Number of Types: Represents the distinct count of garment types purchased by a customer. For instance, if a customer buys a T-shirt, jeans, and shoes, this variable would have a     value of 3.
+  - Quantity: The total number of garments purchased by the customer.
+  - Discount Rate: The percentage discount applied to the customer's purchase relative to the total amount paid.
+  - Value Paid: The total amount paid by the customer for their purchase, converted to USD from COP using average USD/COP rate in 2022 [1]
+  - Second purchase indicator: Label that indicates whether or not the customer bought a second time.
+ 
+ 
+```{r}
+usd_cop.rate = 4257.6765
+data <- read.csv2("C:/Users/tuana/Documents/MSDS coursework/DATA 5322 Machine Learning/DataSet/Data_historic.csv")
+data<- data[data$Pay>25000
+            &data$Pay<1000000
+            &data$Discount>0
+            &data$Sex_client!="No Informado",
+            c(3,5,7,8,10,11,12,13,14)]
+names(data) <- c("Customer_ID","Gender","Region","Channel","Number_of_Types",
+                 "Quantity","Discount_rate","Value_Paid","Second_purchase") 
+#Data cleaning
+data$Gender <- as.factor(ifelse(data$Gender =="F", "Female", "Male"))
+data$Region <- as.factor(data$Region)
+data$Channel <- as.factor(data$Channel)
+data$Second_purchase <- as.factor(ifelse(data$Second_purchase == 0, "One-time", "Returning"))
+data$Value_Paid <- data$Value_Paid/usd_cop.rate
+
+data$Discount_rate <- data$Discount/usd_cop.rate /(data$Discount_rate/usd_cop.rate +data$Value_Paid)
+
+knitr::kable(head(data[,c(1:5)]))
+knitr::kable(head(data[,c(6:9)]))
+
+```
+  
+### Exploratory Analysis
+
+Subsequently, a comprehensive analysis of each variable will be conducted to determine its data type, distribution, and enable comparisons in relation to the response variable indicating the likelihood of a second purchase. This examination aims to gain insights into the relationship between these variables and the propensity of customers to make subsequent purchases.
+
+```{r}
+par(mfrow=c(1,2))
+barplot(prop.table(table(data$Gender)),las=1,main="Propotion of Gender")
+barplot(sort(prop.table(table(data$Region)),decreasing = T)[1:4],las=1,main="Propotion of Region",horiz = T,cex.names=0.8)
+```
+
+It is noteworthy that a significant proportion, 60%, of new customers who make purchases in the company's stores are male. This finding indicates that the clothing offerings primarily attract a male audience. Additionally, it is worth mentioning that the cities of Medellin and Bogota collectively contribute to 50% of new customers. As these two cities are the most populous in Colombia, their substantial participation is expected. 
+
+```{r}
+par(mfrow=c(1,2))
+par(mar = c(4, 4, 3, 4) + 0.4)  # Adjust the margins
+barplot(prop.table(table(data$Channel)),las=1,main="Propotion of Channel")
+barplot(prop.table(table(data$Second_purchase)), beside = FALSE,las=1,main="Propotion of Second Purchase")
+```
+
+Among the different channels, the Superdry brand stands out by capturing 70% of new customers. This implies that Superdry is particularly effective at attracting customers compared to other brands within the company. However, it is important to highlight that only 35% of new customers make a second purchase. This finding calls for attention, as there is a significant portion, 65%, of customers who do not return for subsequent purchases. This suggests the need for the company to develop effective customer recapture strategies targeting this particular segment. 
+
+```{r}
+par(mfrow=c(1,2))
+hist(data$Quantity,main="Histogram of Quantity",xlab="Quantity (Unit)")
+hist(data$Value_Paid,main="Histogram of Value Paid",xlab = "Value Paid ($)")
+
+```
+
+Regarding customer behavior, both the quantity of garments purchased and the corresponding value paid exhibit a right-skewed distribution. This indicates that a considerable number of customers tend to make high-value purchases on a recurring basis. The presence of such customers and the frequency with which they make substantial purchases underscores the opportunity for the company to leverage this trend and potentially implement strategies that cater to these preferences.
+
+Now, an examination of the relationship between the explanatory categorical variables, namely Gender, Region, and Channel, and the response variable will be conducted. The primary focus is to analyze the probability of customers making a second purchase based on their respective characteristics.
+
+```{r}
+knitr::kable(round(prop.table(table(Customer_Gender = data$Gender, Retention =data$Second_purchase),margin=1),2))
+```
+The analysis reveals that male customers have a 37% probability of making a second purchase. Consequently, recommendations for the company involve formulating strategies targeting women, as they are less likely to make initial purchases as new customers and also exhibit lower repurchase probabilities.
+
+```{r}
+# Create the table with proportions and round the values to 2 decimal places
+proportions_table <- round(prop.table(table(data$Region, data$Second_purchase), margin = 1), 2)
+
+# Sort the table by the "Second Purchase" column in descending order
+proportions_table <- proportions_table[order(proportions_table[, "Returning"], decreasing = TRUE), ]
+knitr::kable(proportions_table)
+```
+```{r}
+data
+```
+
+
+
+Notably, the Online Region exhibits the highest probability of repurchase. This indicates that customers who utilize this Region are more inclined to make subsequent purchases. It is conceivable that this region employs distinct sales strategies, therefore, replicating these approaches across different regions of the country would be beneficial.
+
+```{r}
+knitr::kable(round(prop.table(table(data$Channel,data$Second_purchase),margin=1),2))
+```
+
+Furthermore, it is worth noting that the probability of repurchase in the Superdry channel surpasses that of the Diesel channel. One potential explanation for this disparity could be that the average value of products in the Superdry channel is lower compared to the Diesel channel. Consequently, customers may be more inclined to make multiple purchases in the Superdry channel. This conclusion is supported by the accompanying table.
+
+```{r}
+knitr::kable(aggregate(data$Value_Paid, list(data$Channel), FUN=mean),col.names=c("Chanel","Mean Value paid"))
+```
+
+Next, an analysis of the continuous explanatory variables (number of types, quantity, discount and value paid) will be carried out with respect to the response variable indicating second purchase. In the comparative graph of the means between customers who bought a second time and those who did not for each of the variables, the following findings can be observed:
+
+
+```{r}
+# Create the aggregated table as data frame
+aggregated_df <- as.data.frame((aggregate(data[, 5:8], list(data$Second_purchase), FUN = mean)))
+
+
+# Add column names
+colnames(aggregated_df) <- c("Second_Purchase", "Number_of_Types", "Quantity", "Discount", "Value Paid")
+
+aggregated_df[,c("Number_of_Types", "Quantity", "Discount", "Value Paid")] = round(aggregated_df[,c("Number_of_Types", "Quantity", "Discount", "Value Paid")], 2)
+# Print the table using kable()
+knitr::kable(aggregated_df)
+```
+
+  - Number of types: The average number of types of garments purchased by customers who made a second purchase is 1.38, while for those who did not make a second purchase it is 1.27. This suggests that customers who make a second purchase tend to purchase slightly more variety of garments.
+
+  - Quantity: The average number of units purchased by customers who made a second purchase is 1.94, compared to 1.66 for those who did not make a second purchase. This indicates that customers who make a second purchase tend to purchase a larger quantity of garments.
+
+  - Discount: The average discount obtained by customers who made a second purchase is \$31.21 USD, while for those who did not make a second purchase it is \$31.21. Although the difference is small, it suggests that customers who make a second purchase may benefit slightly less from discounts compared to those who do not.
+
+  - Value paid: The average value paid by customers who made a second purchase is USD65.45, while for those who did not make a second purchase it is USD63.01. This indicates that customers who make a second purchase tend to spend slightly more on their purchases.
+
+In summary, analysis of these continuous variables reveals the profile of the customer who makes a second purchase. These customers tend to purchase a greater variety of garment types, purchase a larger quantity of units, and spend more money compared to those customers who do not make a second purchase. These findings provide valuable information to better understand customer behavior and can guide customer retention and loyalty strategies.
+
+### Principal Component Analysis
+
+PCA, K-means and Hierarchical Clustering would be used on this data set to reduce dimensionality, identify customer patterns and segments, and better understand the characteristics and behavior of customers who make a second purchase. These analyses would help make informed decisions and design effective strategies for customer retention and loyalty.
+
+
+The shape of the PCA decomposition provides important insights into the data structure and the relative importance of the variables. In this case, we can observe the following:
+
+  - Standard Deviation: The standard deviation represents the spread or variability of the data along each principal component (PC). A higher standard deviation indicates that the corresponding PC captures more variation in the original variables. In this case, PC1 has the highest standard deviation of 1.4650, followed by PC2 (1.0198), PC3 (0.7037), and PC4 (0.56450). This implies that PC1 explains the most variability in the data, followed by PC2, PC3, and PC4.
+
+  - Proportion of Variance: The proportion of variance indicates the amount of total variance explained by each principal component. It represents the relative importance of each PC in capturing the variability of the original variables. In this case, PC1 explains 53.65% of the total variance, PC2 explains 26.00%, PC3 explains 12.38%, and PC4 explains 7.97%. Therefore, PC1 captures the largest proportion of variability in the data, followed by PC2, PC3, and PC4.
+
+  - Cumulative Proportion: The cumulative proportion of variance shows the cumulative amount of variance explained by each principal component and all preceding components. It provides insights into how much information is captured as we move from one PC to the next. In this case, the cumulative proportion increases as we move from PC1 to PC4, with PC1 explaining 53.65% of the variance, PC2 explaining a cumulative total of 79.65%, PC3 explaining 92.03%, and PC4 explaining 100% of the total variance.
+
+
+```{r,message=F,Warning=F}
+library("factoextra")
+library("cluster")
+pca_result <- prcomp(data[, 5:8], scale. = TRUE)
+pca_components <- pca_result$x
+
+
+fviz_eig(pca_result, addlabels = TRUE)
+```
+
+Overall, the shape of the PCA decomposition suggests that the first two principal components (PC1 and PC2) are the most important in explaining the variability in the original variables. Together, these two components capture 80% of the total variance, indicating that they contain the most significant information about the relationship between the variables. PC1 has the highest variability and explains the most variance, while PC2 captures the second highest amount of variance. PC3 and PC4 have lower variability and explain less variance compared to PC1 and PC2.
+
+In the context of this data for clients, the interpretation of the U and V* matrices from the SVD or the "x" and "rotation" matrices from PCA would be as follows:
+
+  - U Matrix (or "x" Matrix): The U matrix  represents the transformed data after applying PCA. In the context of client data, the U matrix would provide insights into the relationship between the original variables (such as number of types, quantity, discount, and value paid) and the derived principal components. Each column of the U matrix represents a principal component, and the values in the matrix represent the weights or loadings of the original variables on each principal component. By examining the U matrix, is possible to  understand which variables contribute the most to each principal component and identify patterns or trends in the data.
+
+  - V* Matrix (or "rotation" Matrix): The V* matrix  represents the transformation matrix that rotates the transformed data (U matrix) back to the original variable space. In the context of client data, the V* matrix provides information about the relationship between the principal components and the original variables. Each column of the V* matrix represents an eigenvector, which represents the direction or axis of maximum variance in the original variable space.
+
+This information from these two matrices becomes clearer when plotting the Bi-plot:
+```{r,message=F,Warning=F}
+fviz_pca_biplot(pca_result, repel = TRUE, max.overlaps = Inf)
+```
+The variables "Value Paid," "Number of Types," and "Quantity" are identified as the most important variables in forming the first principal component. Individuals with high values in PC1, such as individual 3441, tend to have larger values for these variables compared to individuals with low values in PC1, such as individual 14876. For example, individual 3441 has a significantly higher value for "Value Paid," "Number of Types," and "Quantity" compared to individual 14876.
+
+```{r}
+print("Value of individual 3441 in PC1:")
+pca_result$x[which.max(pca_result$x[,1]),1]
+print("Value of individual 14876 in PC1:")
+pca_result$x[which.min(pca_result$x[,1]),1]
+```
+```{r}
+print("Value of individual 3441 in original data:")
+data[which.max(pca_result$x[,1]),5:8]
+print("Value of individual 14876 in original data:")
+data[which.min(pca_result$x[,1]),5:8]
+```
+
+Inverse Relationship between the Second Component and Discount: The second component of the biplot is associated with the variable "Discount," but it exhibits an inverse relationship (downward arrow). This means that customers with a large discount will have a negative value in this component, while customers with a small discount will have a positive value. This indicates that customers who receive higher discounts tend to have different purchasing patterns compared to those who receive lower discounts.
+
+Regarding the structure within the data, the PCA helps identify underlying patterns and relationships between variables. By transforming the original features into principal components, the PCA captures the most significant sources of variation in the data. The biplot visually represents these relationships, showing how variables and individuals are positioned in relation to the principal components.
+
+When comparing plotting on two original features versus using the principal components, the key difference lies in the ability to capture and visualize complex interactions and dependencies among multiple variables. Plotting on two original features may only provide a limited view of the data, whereas the PCA allows for a comprehensive understanding of the underlying structure by considering all variables simultaneously. The PCA reveals the inherent relationships and patterns within the data that may not be readily apparent when plotting on only two original features.
+
+
+### K-means Clustering
+
+Based on this Bi-plot and the behavior of the principal components, K means and can be performed to find different groups and to better characterize the customers.
+
+
+In k-means clustering, the total within-cluster sum of squares is a measure that quantifies the total variability or dispersion of the data points within each cluster. It represents the sum of squared distances between each data point and the centroid of its assigned cluster. To select the optimal number of clusters for a k-means problem the concept of "elbow method" is going to be used. The elbow method involves plotting the number of clusters against the corresponding  total within-cluster sum of squares values and identifying the "elbow" point in the plot. 
+
+```{r,out.width="100%",fig.align = "center"}
+set.seed(16)
+# Access the principal components
+pca_components <- pca_result$x
+
+# Determine the number of clusters using the elbow method
+wss <- numeric(10)
+for (k in 1:10) {
+  kmeans_model <- kmeans(pca_components, centers = k)
+  wss[k] <- kmeans_model$tot.withinss
+}
+
+# Plot the elbow curve to determine the optimal number of clusters
+plot(1:10, wss, type = "b", xlab = "Number of Clusters", ylab = "Total Within Sum of Squares",main="elbow method to K means")
+
+```
+
+
+The graph show that at 4 luster, the change from adding 1 more clusters diminish. 4 would be the optimal number of clusters and paint the resulting groups on the principal components.
+
+```{r,out.width="70%",fig.align = "center"}
+# Choose the optimal number of clusters based on the elbow curve analysis
+# Perform K-means clustering
+set.seed(123)
+kmeans_model <- kmeans(pca_components, centers = 4)
+
+# Access the cluster assignments
+cluster_assignments <- kmeans_model$cluster
+data$cluster_assignments <- kmeans_model$cluster
+
+plot(pca_result$x[,1],pca_result$x[,2], col = cluster_assignments,xlab="PC1",ylab="PC2")
+
+```
+
+Based on  the scatterplot it reveals distinct groupings primarily located in each quadrant of the Cartesian plane. The green group is characterized by positive values in PC1, indicating higher values in variables such as Number of Types, Quantity, Discount, and Value Paid. The blue group, on the other hand, displays positive values in PC1 but negative values in PC2, suggesting higher values in Number of Types, Quantity, and Value paid, but lower values in discount. The red group exhibits negative values in PC1 but positive values in PC2, indicating lower values in Number of Types, Quantity, and Value paid, but higher values in Discount. Lastly, the black group displays negative values in both PC1 and PC2, suggesting lower values across all variables. 
+
+```{r}
+df <- as.data.frame(aggregate(data[,5:8], list(data$cluster_assignments), FUN=mean))
+
+colnames(df) = c('Cluster', 'Number_of_Types', 'Quantity', 'Discount', 'Value_Paid')
+
+knitr::kable(df)
+```
+
+Additionally, considering the table data provided, it can be observed that:
+
+  - Group 1 has an average of 1.0 for number of garment type, 1.14 for Quantity, a discount of 0.41, and an average Value Paid of \$42.94.
+  - Group 2 has higher averages for number of garment type (1.16), Quantity (1.38), and Value paid (\$82.13), but a lower discount value of 0.15.
+  - Group 3 has substantially higher averages for the number of garment type (2.53), Quantity (3.85), and Value paid (\$154.87), with a moderate discount value of 0.23.
+  - Group 4 has an intermediate average for Number of garment type (1.56), Quantity (2.58), and Value paid (\$87.22), with a relatively higher discount value of 0.37.
+
+
+When comparing the groups with the second purchase indicator, it is evident that Group 3 stands out with the highest probability of making a second purchase. This indicates that customers belonging to Group 3 are more likely to become repeat buyers, making them a valuable target for the company.
+
+```{r}
+prop_table <- round(prop.table(table(data$cluster_assignments, data$Second_purchase), margin = 1), 2)
+
+# Add row names to the table
+prop_table <- cbind(Index = rownames(prop_table), prop_table)
+
+
+# Generate the table using kable
+knitr::kable(prop_table, col.names = c('Cluster', 'One-time', 'Returning'))
+```
+
+Considering the objective of targeting customers who not only have higher values in terms of their purchasing behavior but also exhibit a higher likelihood of making a second purchase, Group 3 emerges as the best group. This group not only demonstrates higher averages for the relevant variables but also has lower discount values, indicating a potentially higher level of engagement and loyalty among its members.
+
+Combined the characteristic and retention rate of the clusters, Group 3 could be consider "Loyal Customer", with multiple high-value purchases with moderate discount dependancy. Group 4 has the 2nd highest retention rate, discount usage, and also purchase amount, which mark them as "Sale-season Customer" where they purchase multiple times but depends heavily on discount percentage. In contrast with group 4, customer in group 2 shop with less items with the least amount of discount, a sign of "Casual Customer" where they shop spontaneously without discount concern with low likelihood to come back. At last, group 1 shows the least desiable traits as they mostly shops the items on sale with least amount of cross-sale and up-sale, so they could be consider "High-demanded low-value customer".
+
+Therefore, promotion strategies should consider bundling to still keep the Sale-season Customer satisfied but gatekeep the high-demanded low-value customer, while 
+
+### Hierarchical Clustering 
+
+Hierarchical Clustering can be performed to find different groups and to better characterize the customers.
+
+
+```{r}
+# Perform hierarchical clustering
+hc <- hclust(dist(data[5:8]), method = "complete")
+
+# Cut the dendrogram into 4 clusters
+clusters <- cutree(hc, k = 4)
+
+# Plot the dendrogram
+plot(hc, main = "Hierarchical Clustering", xlab = "Observations", ylab = "Distance")
+
+# Add color to the dendrogram based on the clusters
+rect.hclust(hc, k = 4, border = 2:5)
+
+# Add cluster labels to the plot
+text(x = length(clusters), y = 0, labels = clusters, col = clusters, cex = 0.1)
+
+data$cluster_assignments_hc <- clusters
+
+```
+
+
+The dendrogram illustrates the hierarchical clustering results based on the "complete" linkage method. The vertical lines in the dendrogram indicate the distance at which clusters are formed. In this case, the dendrogram is divided into 4 distinct clusters.
+
+Each observation (or customer) is represented by a vertical line, and the height at which the lines are merged represents the dissimilarity between the observations. The clusters are identified by different colors and labeled accordingly.
+
+The hierarchical clustering allows to group similar observations together based on their characteristics. 
+
+Looking at the underlying data we found this:
+
+```{r}
+df <- aggregate(data[,5:8], list(data$cluster_assignments_hc), FUN=mean)
+colnames(df) = c('Cluster', 'Number_of_Types', 'Quantity', 'Discount', 'Value_Paid')
+
+knitr::kable(df)
+
+```
+
+By examining the underlying data, we can further analyze the characteristics of each cluster. The average values for the variables within each cluster are as follows:
+
+  - Cluster 1: This group has an average of 1.48 types, 1.96 quantity, a discount of 0.27, and an average value paid of \$89.55.
+
+  - Cluster 2: Customers in this group have an average of 1.12 types, 1.45 quantity, a discount of 0.34, and an average value paid of \$39.76.
+
+  - Cluster 3: This cluster is characterized by customers who purchase an average of 1.74 types, 2.56 quantity, a discount of 0.22, and an average value paid of \$146.94.
+
+  - Cluster 4: Customers in this group have an average of 1.90 types, 2.90 quantity, a discount of 0.22, and an average value paid of $208.51.
+
+The hierarchical clustering approach enables the grouping of similar customers based on their characteristics. By identifying distinct clusters, businesses can gain insights into different customer segments and tailor their marketing strategies, product offerings, and customer engagement approaches to meet the specific needs and preferences of each cluster. This allows for more personalized and targeted marketing efforts, leading to improved customer satisfaction and overall business performance.
+
+
+
+### Retention Prediction Model Using Random Forest
+
+Based on the original variables and the two segmentation groups created previously with k means and hierarchical clustering, we proceed to create a random tree model to predict whether or not a customer will buy a second time. Decision trees will be used because we have five categorical variables: gender, region, channel, k means cluster, hierarchical cluster that we identified in the descriptive analysis that are important to predict the response variable. 
+
+
+```{r,message=FALSE,warning=F}
+#Sampling data 
+set.seed(527)
+sam <- sample(1:nrow(data),nrow(data)*0.7)
+training <- data[sam,c(2:11)]
+testing <- data[-sam,c(2:11)]
+
+#Applaying decision tree, random forest, SVM 
+library("randomForest")
+library("e1071")
+library("rpart")
+
+# Tryout the best predictors for each decision nodes. COMMENTED OUT SINCE IT LONG TIME TO KNIT
+#set.seed(527)
+#rf.tun <- tune(randomForest, data = training, Second_purchase ~ ., range = list(ntree = c(100,200, 300, 400, 500, 600, 700, 800, 900, 1000), mtry = c(3, 4, 5, 6, 7, 8, 10, 15)))
+
+rf_model <- randomForest(data = training, Second_purchase ~ ., ntree = 900, mtry = 3)
+
+# Plot variable importance
+varImpPlot(rf_model)
+```
+
+After running cross-validation on number of trees and number of variables at each split, the best Random Forest model for this data set contains 900 trees and 3 variables at each split.
+
+In random forest, the mean Decrease Gini metric represents the average reduction in the Gini impurity measure of the target variable (or the decrease in node impurity) caused by each predictor variable across all trees in the random forest model. It provides an indication of the variable's importance in making accurate predictions.
+
+If the variables "Discount," "Value paid," and "Region" show as the most important based on the meanDecreaseGini values, it implies that these variables have a strong influence on the predictive power of the model.
+
+
+  - Discount: A higher meanDecreaseGini value for the "Discount" variable suggests that this variable plays a significant role in determining the outcome of the target variable (e.g., second purchase). It indicates that the level of discount offered may have a substantial impact on customers' decision-making, potentially influencing their likelihood of making a second purchase.
+
+  - Value Paid: A higher meanDecreaseGini value for the "Value paid" variable indicates that this variable has a strong predictive power in determining the target variable. It suggests that the amount customers paid for their purchases is a crucial factor in whether they make a second purchase. Customers who spent more may be more likely to make repeat purchases.
+
+  - Region: The "Region" variable also shows a significant meanDecreaseGini value, implying that it contributes to the predictive power of the model. It suggests that the region from which customers belong has an influence on their likelihood of making a second purchase. Different regions may have varying customer behaviors, preferences, or market dynamics, which can impact the outcome.
+
+Overall, these three variables (Discount, Value Paid, and Region) are important features in the random forest model for predicting second purchases. They provide valuable insights into the factors that drive customer behavior and can help businesses make informed decisions regarding pricing strategies, customer segmentation based on regions, and identifying potential high-value customers.
+
+
+The computational results of the random forest model for predicting second purchases show an accuracy of approximately 62.32%. The confusion matrix reveals that out of a total of 1,205 observations, the model correctly predicted 648 cases where customers did not make a second purchase (label 0) and 103 cases where customers did make a second purchase (label 1). However, the model also misclassified 321 cases where customers actually made a second purchase as not making a second purchase, and 133 cases where customers did not make a second purchase as making a second purchase.
+
+```{r}
+# Make predictions on test data
+predictions <- predict(rf_model, testing)
+conf_mat <- table(predictions, testing$Second_purchase)
+knitr::kable(conf_mat, caption = "Confusion Matrix for Random Forest Model Predicting Second purchase")
+```
+
+```{r}
+print("Acurracy:")
+sum(diag(conf_mat))/sum(conf_mat)
+```
+
+This indicates that the random forest model has some limitations in accurately predicting second purchases based on the given set of variables. The relatively high number of misclassifications suggests that there might be other important factors or interactions between variables that are not captured by the model. It's possible that additional variables or a different modeling approach could improve the accuracy and predictive power of the model.
+
+## Discusion:
+In this analysis, 2 clustering methods: k-means and hierarchical have been deployed to segment 4 clusters, but the k-means clustering returns more distiguish centroids compared to hierarchical clustering average results Therefore, k-mean clustering wou be used to intepret the result.
+
+Furthermore, random forests provide a measure of variable importance through metrics like mean Decrease Gini. This allows us to identify which variables have the most significant impact on predicting second purchases. In this case, the variables "Discount," "Value paid," and "Region" were identified as important based on the mean Decrease Gini values. This information can be used to make informed decisions and design effective strategies for customer retention and loyalty.
+
+In comparison to the unsupervised methods used earlier (PCA and k-means clustering), the supervised random forest model focuses on predicting the likelihood of a customer making a second purchase. It leverages the information learned from the unsupervised methods, such as the underlying structure and groups within the data, to build a predictive model. The random forest model takes into account multiple variables and their interactions to make accurate predictions, whereas unsupervised methods provide more generalized insights about the data structure and groupings.
+
+By combining the information gained from the unsupervised methods and the predictive power of the random forest model, the company can gain a comprehensive understanding of customer behavior. They can identify key variables that influence purchasing decisions, segment customers based on their characteristics and behaviors, and develop targeted strategies to improve customer retention and maximize profitability.
+
+Limitation of this analysis is that the nature of the retail business is that their data have significant more categorical dimensions than numerical ones while we only use clustering methods for numerical values. This might not pick up real patterns underlying in those categories, such as combination of items, purchase time of day, holiday versus norma day shopping,...
+
+## Conclusion:
+
+The analysis of customer data from ColModa S.A. reveals valuable insights into customer behavior and provides recommendations for improving customer retention and loyalty. The findings show that male customers are more likely to make a second purchase, suggesting the need for targeted strategies to attract female customers as new buyers and increase their repurchase probabilities. The Online Region exhibits the highest probability of repurchase, indicating the effectiveness of its sales strategies and the potential for replication in other regions. The Superdry brand captures a significant portion of new customers, implying the need to develop effective recapture strategies for the substantial number of customers who do not return for subsequent purchases. The analysis of continuous variables highlights the profile of customers who make a second purchase, including their preference for purchasing a greater variety of garment types, higher quantities, and slightly more favorable discounts. By leveraging these findings, ColModa S.A. can enhance customer retention and loyalty by tailoring strategies to meet customer preferences. The PCA, k-means clustering, and Hierarchical Clustering  contribute to a comprehensive understanding of customer patterns and provide a basis for informed decision-making in customer-focused strategies.
+
+
+# Reference
+[1] US dollar to Colombian peso spot exchange rates for 2022. Exchange Rates. (n.d.). https://www.exchangerates.org.uk/USD-COP-spot-exchange-rates-history-2022.html#:~:text=Average%20exchange%20rate%20in%202022%3A%204257.6765%20COP.
